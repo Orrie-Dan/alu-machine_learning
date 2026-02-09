@@ -1,91 +1,45 @@
 #!/usr/bin/env python3
-"""Module that computes the inverse of a matrix"""
+"""Module that determines matrix definiteness"""
+
+import numpy as np
 
 
-def determinant(matrix):
-    """Compute determinant of a square matrix"""
+def definiteness(matrix):
+    """Calculate definiteness of a matrix"""
 
-    n = len(matrix)
+    # Type check
+    if not isinstance(matrix, np.ndarray):
+        raise TypeError("matrix must be a numpy.ndarray")
 
-    if matrix == [[]]:
-        return 1
-
-    if n == 1:
-        return matrix[0][0]
-
-    if n == 2:
-        return matrix[0][0]*matrix[1][1] - matrix[0][1]*matrix[1][0]
-
-    det = 0
-    for col in range(n):
-        sub = [
-            [matrix[i][j] for j in range(n) if j != col]
-            for i in range(1, n)
-        ]
-        det += ((-1) ** col) * matrix[0][col] * determinant(sub)
-
-    return det
-
-
-def cofactor(matrix):
-    """Compute cofactor matrix"""
-
-    n = len(matrix)
-
-    if n == 1:
-        return [[1]]
-
-    cof = []
-    for i in range(n):
-        row = []
-        for j in range(n):
-            sub = [
-                [matrix[r][c] for c in range(n) if c != j]
-                for r in range(n) if r != i
-            ]
-            row.append(((-1) ** (i + j)) * determinant(sub))
-        cof.append(row)
-
-    return cof
-
-
-def adjugate(matrix):
-    """Compute adjugate matrix"""
-
-    n = len(matrix)
-
-    if n == 1:
-        return [[1]]
-
-    cof = cofactor(matrix)
-    return [[cof[j][i] for j in range(n)] for i in range(n)]
-
-
-def inverse(matrix):
-    """Calculate the inverse of a matrix"""
-
-    # Validation
-    if (not isinstance(matrix, list) or len(matrix) == 0 or
-            not all(isinstance(row, list) for row in matrix)):
-        raise TypeError("matrix must be a list of lists")
-
-    n = len(matrix)
-
-    if any(len(row) != n for row in matrix):
-        raise ValueError("matrix must be a non-empty square matrix")
-
-    # determinant
-    det = determinant(matrix)
-
-    # singular matrix
-    if det == 0:
+    # Must be 2D square and non-empty
+    if matrix.ndim != 2 or matrix.shape[0] == 0 or matrix.shape[0] != matrix.shape[1]:
         return None
 
-    # adjugate
-    adj = adjugate(matrix)
+    # Must be symmetric
+    if not np.allclose(matrix, matrix.T):
+        return None
 
-    # divide by determinant
-    inv = [[adj[i][j] / det for j in range(n)] for i in range(n)]
+    # Eigenvalues
+    eigvals = np.linalg.eigvals(matrix)
 
-    return inv
+    # tolerance for floating error
+    tol = 1e-8
 
+    positive = np.all(eigvals > tol)
+    non_negative = np.all(eigvals >= -tol)
+    negative = np.all(eigvals < -tol)
+    non_positive = np.all(eigvals <= tol)
+
+    if positive:
+        return "Positive definite"
+    if non_negative:
+        return "Positive semi-definite"
+    if negative:
+        return "Negative definite"
+    if non_positive:
+        return "Negative semi-definite"
+
+    if np.any(eigvals > tol) and np.any(eigvals < -tol):
+        return "Indefinite"
+
+    return None
