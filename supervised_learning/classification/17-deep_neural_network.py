@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Deep Neural Network for binary classification
+    A class DeepNeuralNetwork that defines a deep neural
+    network performing binary classification
 """
 
 import numpy as np
@@ -8,51 +9,49 @@ import numpy as np
 
 class DeepNeuralNetwork:
     """
-    Defines a deep neural network performing binary classification
+    A class DeepNeuralNetwork
     """
 
     def __init__(self, nx, layers):
-        # nx validation
+        ''' DeepNeuralNetwork class constructor'''
         if not isinstance(nx, int):
             raise TypeError("nx must be an integer")
         if nx < 1:
             raise ValueError("nx must be a positive integer")
-
-        # layers validation
         if not isinstance(layers, list) or len(layers) == 0:
             raise TypeError("layers must be a list of positive integers")
-
-        if not all(isinstance(n, int) and n > 0 for n in layers):
-            raise TypeError("layers must be a list of positive integers")
-
-        self.nx = nx
-        self.layers = layers
 
         self.__L = len(layers)
         self.__cache = {}
         self.__weights = {}
+        self.nx = nx
+        self.layers = layers
 
-        for l in range(1, self.__L + 1):
-            n = layers[l - 1]
-            prev = nx if l == 1 else layers[l - 2]
+        # Initialize weights and biases and validate layers in one loop
+        for i in range(self.__L):
+            if not isinstance(layers[i], int) or layers[i] < 1:
+                raise TypeError("layers must be a list of positive integers")
+            if i == 0:
+                self.__weights["W1"] = (
+                    np.random.randn(layers[i], nx) * np.sqrt(2 / nx))
+            else:
+                self.__weights["W" + str(i + 1)] = np.random.randn(
+                    layers[i], layers[i - 1]
+                ) * np.sqrt(2 / layers[i - 1])
+            self.__weights["b" + str(i + 1)] = np.zeros((layers[i], 1))
 
-            # He initialization
-            self.__weights["W" + str(l)] = (
-                np.random.randn(n, prev) * np.sqrt(2 / prev)
-            )
-            self.__weights["b" + str(l)] = np.zeros((n, 1))
-
+    # create the getter functions of the deep network
     @property
     def L(self):
-        """Number of layers"""
+        ''' return the L attribute'''
         return self.__L
 
     @property
     def cache(self):
-        """Cache getter"""
+        ''' return the cache attribute'''
         return self.__cache
 
     @property
     def weights(self):
-        """Weights getter"""
+        ''' return the weights attribute'''
         return self.__weights

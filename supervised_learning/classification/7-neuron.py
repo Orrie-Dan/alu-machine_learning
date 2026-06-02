@@ -1,135 +1,143 @@
 #!/usr/bin/env python3
-"""Defines a single neuron performing binary classification"""
+'''
+    A class Neuron that defines a single neuron performing
+    binary classification:
+'''
+
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 
 class Neuron:
-    """Single neuron for binary classification"""
-
+    '''
+        Class Neuron
+    '''
     def __init__(self, nx):
-        """Initialize the neuron"""
-        if not isinstance(nx, int):
-            raise TypeError("nx must be an integer")
-
+        '''
+            Constructor
+        '''
+        if type(nx) is not int:
+            raise TypeError('nx must be an integer')
         if nx < 1:
-            raise ValueError("nx must be a positive integer")
-
+            raise ValueError('nx must be a positive integer')
         self.__W = np.random.randn(1, nx)
         self.__b = 0
         self.__A = 0
 
     @property
     def W(self):
-        """Getter for W"""
+        '''
+            Getter
+        '''
         return self.__W
 
     @property
     def b(self):
-        """Getter for b"""
+        '''
+            Getter
+        '''
         return self.__b
 
     @property
     def A(self):
-        """Getter for A"""
+        '''
+            Getter
+        '''
         return self.__A
 
     def forward_prop(self, X):
-        """Calculate forward propagation"""
-        Z = np.matmul(self.__W, X) + self.__b
-        self.__A = 1 / (1 + np.exp(-Z))
+        '''
+            Calculates the forward propagation of the neuron
+        '''
+        self.__A = 1 / (1 + np.exp(-np.dot(self.__W, X) - self.__b))
         return self.__A
 
     def cost(self, Y, A):
-        """Calculate cost using logistic regression"""
+        '''
+            Calculates the cost of the model using logistic regression
+        '''
         m = Y.shape[1]
-
-        cost = -np.sum(
-            (Y * np.log(A)) +
-            ((1 - Y) * np.log(1.0000001 - A))
-        ) / m
-
+        cost = ((-1 / m) * np.sum(Y * np.log(A) + (1 - Y)
+                                  * np.log(1.0000001 - A)))
         return cost
 
     def evaluate(self, X, Y):
-        """Evaluate neuron predictions"""
+        '''
+            Evaluates the neuron’s predictions
+        '''
         A = self.forward_prop(X)
-
-        prediction = np.where(A >= 0.5, 1, 0)
-
         cost = self.cost(Y, A)
-
+        prediction = np.where(A >= 0.5, 1, 0)
         return prediction, cost
 
     def gradient_descent(self, X, Y, A, alpha=0.05):
-        """Performs one pass of gradient descent"""
+        '''
+            Calculates one pass of gradient descent on the neuron
+        '''
         m = Y.shape[1]
+        dz = A - Y
+        db = (1 / m) * np.sum(dz)
+        dw = (1 / m) * np.matmul(X, dz.T)
+        self.__W = self.__W - (alpha * dw.T)
+        self.__b = self.__b - (alpha * db)
+        return self.__W, self.__b
 
-        dZ = A - Y
-        dW = np.matmul(dZ, X.T) / m
-        db = np.sum(dZ) / m
+    def train(
+        self, X, Y, iterations=5000, alpha=0.05, verbose=True,
+        graph=True, step=100
+    ):
+        '''
+            Trains the neuron
+        '''
+        if type(iterations) is not int:
+            raise TypeError('iterations must be an integer')
 
-        self.__W = self.__W - alpha * dW
-        self.__b = self.__b - alpha * db
+        if iterations < 1:
+            raise ValueError('iterations must be a positive integer')
 
-    def train(self, X, Y, iterations=5000, alpha=0.05,
-              verbose=True, graph=True, step=100):
-        """
-        Train the neuron
+        if type(alpha) is not float:
+            raise TypeError('alpha must be a float')
 
-        X: input data
-        Y: correct labels
-        iterations: number of iterations
-        alpha: learning rate
-        verbose: print training info
-        graph: graph training cost
-        step: interval for printing/graphing
-        """
-        if not isinstance(iterations, int):
-            raise TypeError("iterations must be an integer")
+        if alpha < 0:
+            raise ValueError('alpha must be positive')
 
-        if iterations <= 0:
-            raise ValueError("iterations must be a positive integer")
+        # only if verbose or graph are true
+        if graph or verbose:
+            if type(step) is not int:
+                raise TypeError('step must be an integer')
 
-        if not isinstance(alpha, float):
-            raise TypeError("alpha must be a float")
+            if step < 1 or step > iterations:
+                raise ValueError('step must be positive and <= iterations')
 
-        if alpha <= 0:
-            raise ValueError("alpha must be positive")
-
-        if verbose or graph:
-            if not isinstance(step, int):
-                raise TypeError("step must be an integer")
-
-            if step <= 0 or step > iterations:
-                raise ValueError(
-                    "step must be positive and <= iterations"
-                )
-
+        # store the cost and iteration values
         costs = []
-        steps = []
+        iteration_list = []
 
-        for i in range(iterations + 1):
+        for i in range(iterations+1):
+            # Forward propagation
             A = self.forward_prop(X)
+
+            # compute the cost
             cost = self.cost(Y, A)
+            costs.append(cost)
+            iteration_list.append(i)
 
-            if i % step == 0 or i == iterations:
-                if verbose:
-                    print("Cost after {} iterations: {}".format(i, cost))
+            if verbose and i % step == 0:
+                print("Cost after iteration {}: {}".format(i, cost))
 
-                if graph:
-                    steps.append(i)
-                    costs.append(cost)
+            # gradient descent for the
+            self.gradient_descent(X, Y, A)
 
-            if i < iterations:
-                self.gradient_descent(X, Y, A, alpha)
+        # Evaluation after training
+        evaluation = self.evaluate(X, Y)
 
+        # plot the cost function
         if graph:
-            plt.plot(steps, costs, 'b')
+            plt.plot(iteration_list, costs, 'b-')
             plt.xlabel('iteration')
             plt.ylabel('cost')
             plt.title('Training Cost')
             plt.show()
 
-        return self.evaluate(X, Y)
+        return evaluation

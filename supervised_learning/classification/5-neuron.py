@@ -1,80 +1,83 @@
 #!/usr/bin/env python3
-"""Defines a single neuron performing binary classification"""
+'''
+    A class Neuron that defines a single neuron performing
+    binary classification:
+'''
+
 
 import numpy as np
 
 
 class Neuron:
-    """Single neuron for binary classification"""
-
+    '''
+        Class Neuron
+    '''
     def __init__(self, nx):
-        """Initialize the neuron"""
-        if not isinstance(nx, int):
-            raise TypeError("nx must be an integer")
-
+        '''
+            Constructor
+        '''
+        if type(nx) is not int:
+            raise TypeError('nx must be an integer')
         if nx < 1:
-            raise ValueError("nx must be a positive integer")
-
+            raise ValueError('nx must be a positive integer')
         self.__W = np.random.randn(1, nx)
         self.__b = 0
         self.__A = 0
 
     @property
     def W(self):
-        """Getter for W"""
+        '''
+            Getter
+        '''
         return self.__W
 
     @property
     def b(self):
-        """Getter for b"""
+        '''
+            Getter
+        '''
         return self.__b
 
     @property
     def A(self):
-        """Getter for A"""
+        '''
+            Getter
+        '''
         return self.__A
 
     def forward_prop(self, X):
-        """Calculate forward propagation"""
-        Z = np.matmul(self.__W, X) + self.__b
-        self.__A = 1 / (1 + np.exp(-Z))
+        '''
+            Calculates the forward propagation of the neuron
+        '''
+        self.__A = 1 / (1 + np.exp(-np.dot(self.__W, X) - self.__b))
         return self.__A
 
     def cost(self, Y, A):
-        """Calculate cost using logistic regression"""
+        '''
+            Calculates the cost of the model using logistic regression
+        '''
         m = Y.shape[1]
-
-        cost = -np.sum(
-            (Y * np.log(A)) +
-            ((1 - Y) * np.log(1.0000001 - A))
-        ) / m
-
+        cost = ((-1 / m) * np.sum(Y * np.log(A) + (1 - Y)
+                                  * np.log(1.0000001 - A)))
         return cost
 
     def evaluate(self, X, Y):
-        """Evaluate neuron predictions"""
+        '''
+            Evaluates the neuron’s predictions
+        '''
         A = self.forward_prop(X)
-
-        prediction = np.where(A >= 0.5, 1, 0)
-
         cost = self.cost(Y, A)
-
+        prediction = np.where(A >= 0.5, 1, 0)
         return prediction, cost
 
     def gradient_descent(self, X, Y, A, alpha=0.05):
-        """
-        Performs one pass of gradient descent
-
-        X: input data
-        Y: correct labels
-        A: activated output
-        alpha: learning rate
-        """
+        '''
+            Calculates one pass of gradient descent on the neuron
+        '''
         m = Y.shape[1]
-
-        dZ = A - Y
-        dW = np.matmul(dZ, X.T) / m
-        db = np.sum(dZ) / m
-
-        self.__W = self.__W - alpha * dW
-        self.__b = self.__b - alpha * db
+        dz = A - Y
+        db = (1 / m) * np.sum(dz)
+        dw = (1 / m) * np.matmul(X, dz.T)
+        self.__W = self.__W - (alpha * dw.T)
+        self.__b = self.__b - (alpha * db)
+        return self.__W, self.__b
