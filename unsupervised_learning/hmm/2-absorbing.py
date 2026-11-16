@@ -11,23 +11,29 @@ import numpy as np
 def absorbing(P):
     '''
         Determines if a markov chain is absorbing
+
+        P: square 2D numpy.ndarray of shape (n, n) representing
+           the standard transition matrix
+        Returns: True if it is absorbing, False otherwise,
+                 or None on failure
     '''
-    if len(P.shape) != 2:
+    if type(P) is not np.ndarray or len(P.shape) != 2:
         return None
     n1, n2 = P.shape
-    if (n1 != n2) or type(P) is not np.ndarray:
+    if n1 != n2 or n1 == 0:
         return None
-    D = np.diagonal(P)
-    if (D == 1).all():
-        return True
-    if not (D == 1).any():
+
+    absorbed = np.diagonal(P) == 1
+    if not absorbed.any():
         return False
 
-    for i in range(n1):
-            # print('this is Pi {}'.format(P[i]))
-            for j in range(n2):
-                # print('this is Pj {}'.format(P[j]))
-                if (i == j) and (i + 1 < len(P)):
-                    if P[i + 1][j] == 0 and P[i][j + 1] == 0:
-                        return False
-    return True
+    # Grow the set of states that can reach an absorbing state
+    changed = True
+    while changed:
+        changed = False
+        for i in range(n1):
+            if not absorbed[i] and (P[i, absorbed] > 0).any():
+                absorbed[i] = True
+                changed = True
+
+    return bool(absorbed.all())
